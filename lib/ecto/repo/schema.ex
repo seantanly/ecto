@@ -198,8 +198,14 @@ defmodule Ecto.Repo.Schema do
         args = [repo, metadata, changes, on_conflict, return, opts]
         case apply(changeset, adapter, :insert, args) do
           {:ok, values} ->
+            {autogen, values} =
+              if elem(on_conflict, 0) != :raise do
+                {[], values |> Keyword.take(return)}
+              else
+                {autogen, extra ++ values}
+              end
             changeset
-            |> load_changes(:loaded, extra ++ values, autogen, adapter, metadata)
+            |> load_changes(:loaded, values, autogen, adapter, metadata)
             |> process_children(children, user_changeset, opts)
           {:error, _} = error ->
             error
